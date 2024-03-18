@@ -13,7 +13,6 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate {
     //MARK: - Variables
     var view_map = MKMapView()
     var last_coordinates = CLLocationCoordinate2D()
-    var button_clear = UIButton()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,29 +22,13 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate {
         mapRouteSetup()
     }
     
-    
     //MARK: - Methods
     func layoutSetup(){
-        
-        // clear button setup
-        button_clear.backgroundColor = .lightGray
-        button_clear.layer.borderColor = UIColor.black.cgColor
-        button_clear.layer.borderWidth = 1
-        button_clear.layer.cornerRadius = 5
-        button_clear.setImage(UIImage(named: "ic_close"), for: .normal)
-        view.addSubview(button_clear)
-        button_clear.translatesAutoresizingMaskIntoConstraints = false
-        
-        NSLayoutConstraint.activate([
-            button_clear.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            button_clear.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            button_clear.heightAnchor.constraint(equalToConstant: 50),
-            button_clear.widthAnchor.constraint(equalToConstant: 50)
-        ])
         
         // map view setup
         view.addSubview(view_map)
         view_map.translatesAutoresizingMaskIntoConstraints = false
+        view.sendSubviewToBack(view_map)
         
         NSLayoutConstraint.activate([
             view_map.topAnchor.constraint(equalTo: view.topAnchor),
@@ -90,7 +73,7 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate {
         
         // Add annotations
         self.addAnnonation(coordinate: source_location, initial: true)
-        self.addAnnonation(coordinate: destination_location, initial: true)
+        
         
         // Create a directions object
         let directions = MKDirections(request: request)
@@ -106,18 +89,18 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate {
                 }
                 return
             }
-
+            
             // Get all routes
-                       for route in response.routes {
-                           // Add each route as a separate overlay
-                           self.view_map.addOverlay(route.polyline, level: .aboveRoads)
-                       }
-                       
-                       // Get the bounding map rect to cover both source, destination, and route
-                       if let firstRoute = response.routes.first {
-                           let sourceRect = firstRoute.polyline.boundingMapRect
-                           self.view_map.setVisibleMapRect(sourceRect, edgePadding: UIEdgeInsets(top: 50, left: 50, bottom: 50, right: 50), animated: true)
-                       }
+            for route in response.routes {
+                // Add each route as a separate overlay
+                self.view_map.addOverlay(route.polyline, level: .aboveRoads)
+            }
+            
+            // Get the bounding map rect to cover both source, destination, and route
+            if let firstRoute = response.routes.first {
+                let sourceRect = firstRoute.polyline.boundingMapRect
+                self.view_map.setVisibleMapRect(sourceRect, edgePadding: UIEdgeInsets(top: 50, left: 50, bottom: 50, right: 50), animated: true)
+            }
         }
     }
     
@@ -207,9 +190,8 @@ class ViewController: UIViewController, UIGestureRecognizerDelegate {
                 // draw route for selected destnation
                 self.addStops(coordinates: coordinate)
             }else{
-                self.stopLoader()
+                self.addAnnonation(coordinate: self.last_coordinates, initial: false)
             }
-            
         }
     }
     
@@ -239,36 +221,35 @@ extension ViewController: MKMapViewDelegate{
     }
     
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-           guard annotation is MKPointAnnotation else {
-               return nil
-           }
-           
-           let identifier = "Annotation"
-           var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
-           
-           if annotationView == nil {
-               annotationView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: identifier)
-               annotationView!.canShowCallout = true
-               let detailButton = UIButton(type: .detailDisclosure)
-               annotationView!.rightCalloutAccessoryView = detailButton
-           } else {
-               annotationView!.annotation = annotation
-           }
-           
-           return annotationView
-       }
-       
+        guard annotation is MKPointAnnotation else {
+            return nil
+        }
+        
+        let identifier = "Annotation"
+        var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+        
+        if annotationView == nil {
+            annotationView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+            annotationView!.canShowCallout = true
+            let detailButton = UIButton(type: .detailDisclosure)
+            annotationView!.rightCalloutAccessoryView = detailButton
+        } else {
+            annotationView!.annotation = annotation
+        }
+        return annotationView
+    }
+    
     
     func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
-          // Handle when the callout accessory is tapped
-          if control == view.rightCalloutAccessoryView {
-              if let annotation = view.annotation {
-                  let alertController = UIAlertController(title: annotation.title ?? "", message: annotation.subtitle ?? "", preferredStyle: .alert)
-                  let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
-                  alertController.addAction(okAction)
-                  present(alertController, animated: true, completion: nil)
-              }
-          }
-      }
+        // Handle when the callout accessory is tapped
+        if control == view.rightCalloutAccessoryView {
+            if let annotation = view.annotation {
+                let alertController = UIAlertController(title: annotation.title ?? "", message: annotation.subtitle ?? "", preferredStyle: .alert)
+                let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+                alertController.addAction(okAction)
+                present(alertController, animated: true, completion: nil)
+            }
+        }
+    }
     
 }
